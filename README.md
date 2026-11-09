@@ -48,6 +48,33 @@ journalctl --user -u is-exist.service -f
 Output is also appended to `is-exist.log` in the project root. Stop it with
 `systemctl --user stop is-exist.service`.
 
+## Deploy to Netlify
+
+The repo is Netlify-ready without changing the homelab setup. `netlify.toml`
+sets `NETLIFY_DEPLOYMENT=1`; `vite.config.ts` loads
+`@netlify/vite-plugin-tanstack-start` only when that flag is `1`. Without it,
+builds keep producing the plain Node output used by `is-exist.service`.
+
+1. Push the repo to GitHub.
+2. Import it at <https://app.netlify.com/start>.
+3. Netlify runs `npm run build`, publishes `dist/client`, and wraps the SSR and
+   `/api/check` routes in a Netlify Function (`.netlify/v1/functions/server.mjs`).
+4. In **Site settings → Environment variables**, set
+   `ALLOWED_ORIGINS=https://<your-site>.netlify.app` if the API is consumed from
+   another origin.
+5. Deploy.
+
+To build the Netlify bundle locally:
+
+```bash
+NETLIFY_DEPLOYMENT=1 npm run build
+```
+
+That writes `.netlify/v1/functions/server.mjs`; it is not served by
+`npm run preview`. Plain `npm run build` still produces `dist/server/server.js`
+for the homelab. On Netlify the in-memory scan cache is per function instance,
+so cache hits there are best-effort.
+
 ## Configuration
 
 | Variable          | Purpose                                                    |
@@ -177,4 +204,5 @@ src/
   styles.css                design tokens, layout, motion
 deploy/
   is-exist.service          systemd user unit for the homelab instance
+netlify.toml                Netlify build switch and publish directory
 ```

@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = "dist/client"
+
+[build.environment]
+  NETLIFY_DEPLOYMENT = "1"
+  NODE_VERSION = "22"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 3200
+  port = 8888
