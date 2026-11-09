@@ -243,6 +243,7 @@ export interface PlatformResult {
 }
 
 export type ScanEvent =
+  | { type: 'source'; source: 'live' | 'cache'; cachedAt?: string }
   | { type: 'result'; result: PlatformResult }
   | { type: 'done' }
   | { type: 'error'; message: string }

@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import type { ScanEvent } from '#/lib/platforms'
+import { PLATFORM_IDS, type PlatformResult, type ScanEvent } from '#/lib/platforms'
 import { validateUsername } from '#/lib/username'
 import { getAllowedOrigins, decideCors } from '#/server/origins'
 import { runScan } from '#/server/platform-checks'
+import { readScanCache, writeScanCache } from '#/server/scan-cache'
 
 function jsonResponse(
   body: unknown,
@@ -44,12 +45,15 @@ export const Route = createFileRoute('/api/check')({
           )
         }
 
-        const rawUsername = new URL(request.url).searchParams.get('username')
-        const check = validateUsername(rawUsername ?? '')
+        const url = new URL(request.url)
+        const check = validateUsername(url.searchParams.get('username') ?? '')
 
         if (!check.ok) {
           return jsonResponse({ error: check.reason }, 400, cors.headers)
         }
+
+        const fresh = url.searchParams.get('fresh') === '1'
+        const cached = fresh ? null : readScanCache(check.username)
 
         // The browser aborts the response when the user resubmits, edits the
         // username, or closes the tab; stop the upstream lookups with it.
@@ -66,12 +70,41 @@ export const Route = createFileRoute('/api/check')({
             }
 
             try {
-              await runScan(check.username, abort.signal, (id, outcome) => {
+              if (cached) {
                 send({
-                  type: 'result',
-                  result: { id, status: outcome.status, detail: outcome.detail },
+                  type: 'source',
+                  source: 'cache',
+                  cachedAt: new Date(cached.cachedAt).toISOString(),
                 })
+
+                for (const result of cached.results) {
+                  send({ type: 'result', result })
+                }
+
+                send({ type: 'done' })
+                return
+              }
+
+              send({ type: 'source', source: 'live' })
+
+              const results: PlatformResult[] = []
+
+              await runScan(check.username, abort.signal, (id, outcome) => {
+                const result = {
+                  id,
+                  status: outcome.status,
+                  detail: outcome.detail,
+                }
+                results.push(result)
+                send({ type: 'result', result })
               })
+
+              if (
+                !abort.signal.aborted &&
+                results.length === PLATFORM_IDS.length
+              ) {
+                writeScanCache(check.username, results)
+              }
 
               if (!abort.signal.aborted) send({ type: 'done' })
             } catch {
@@ -102,6 +135,7 @@ export const Route = createFileRoute('/api/check')({
             'content-type': 'application/x-ndjson; charset=utf-8',
             'cache-control': 'no-store',
             'x-content-type-options': 'nosniff',
+            'x-cache': cached ? 'HIT' : 'MISS',
           },
         })
       },

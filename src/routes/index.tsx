@@ -1,12 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { PLATFORMS, type CheckStatus, type RowStatus } from '#/lib/platforms'
 import { groupRows, type RowGroup } from '#/lib/group-rows'
 import { validateUsername } from '#/lib/username'
-import { useScan, type ScanRow } from '#/hooks/use-scan'
+import { useScan, type ScanRow, type ScanSource } from '#/hooks/use-scan'
 
 export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>): { u?: string } => {
+    const username = typeof search.u === 'string' ? search.u : ''
+    return username ? { u: username } : {}
+  },
   component: Home,
 })
 
@@ -20,12 +24,37 @@ const STATUS_COPY: Record<RowStatus, string> = {
 const TALLY_ORDER: CheckStatus[] = ['taken', 'available', 'unknown']
 
 function Home() {
-  const [input, setInput] = useState('')
+  const { u: queryUsername } = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const autoRanFor = useRef<string | null>(null)
+  const [input, setInput] = useState(() => queryUsername ?? '')
   const [formError, setFormError] = useState<string | null>(null)
   const [scannedUsername, setScannedUsername] = useState<string | null>(null)
-  const { rows, phase, error, start, cancel } = useScan()
+  const { rows, phase, error, source, cachedAt, start, cancel } = useScan()
 
   const isScanning = phase === 'scanning'
+
+  useEffect(() => {
+    if (!queryUsername) {
+      if (autoRanFor.current !== null) {
+        autoRanFor.current = null
+        cancel()
+        setScannedUsername(null)
+        setInput('')
+      }
+      return
+    }
+
+    if (autoRanFor.current === queryUsername) return
+
+    const check = validateUsername(queryUsername)
+    if (!check.ok) return
+
+    autoRanFor.current = queryUsername
+    setInput(check.username)
+    setScannedUsername(check.username)
+    start(check.username)
+  }, [queryUsername, start, cancel])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -39,7 +68,14 @@ function Home() {
     setFormError(null)
     setInput(check.username)
     setScannedUsername(check.username)
+    autoRanFor.current = check.username
     start(check.username)
+    void navigate({ search: { u: check.username } })
+  }
+
+  const handleRevalidate = () => {
+    if (!scannedUsername) return
+    start(scannedUsername, { fresh: true })
   }
 
   const handleInput = (value: string) => {
@@ -139,6 +175,9 @@ function Home() {
             username={scannedUsername}
             phase={phase}
             error={error}
+            source={source}
+            cachedAt={cachedAt}
+            onRevalidate={handleRevalidate}
           />
         ) : (
           <Coverage />
@@ -161,9 +200,32 @@ interface ResultPanelProps {
   username: string | null
   phase: 'idle' | 'scanning' | 'done' | 'error'
   error: string | null
+  source: ScanSource | null
+  cachedAt: string | null
+  onRevalidate: () => void
 }
 
-function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
+function formatCacheAge(cachedAt: string | null): string {
+  if (!cachedAt) return 'just now'
+
+  const timestamp = Date.parse(cachedAt)
+  if (Number.isNaN(timestamp)) return 'just now'
+
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000))
+  if (minutes < 1) return 'just now'
+  if (minutes === 1) return '1 min ago'
+  return `${minutes} min ago`
+}
+
+function ResultPanel({
+  rows,
+  username,
+  phase,
+  error,
+  source,
+  cachedAt,
+  onRevalidate,
+}: ResultPanelProps) {
   const total = rows.length
   const resolved = rows.filter((row) => row.status !== 'checking').length
   const counts = TALLY_ORDER.map((status) => ({
@@ -178,6 +240,19 @@ function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
         <div>
           <p className="panel-kicker">results for</p>
           <h2 className="panel-title">@{username}</h2>
+          {source === 'cache' ? (
+            <p className="cache-note">
+              <span className="cache-dot" aria-hidden="true" />
+              from cache · {formatCacheAge(cachedAt)}
+              <button
+                type="button"
+                className="cache-refresh"
+                onClick={onRevalidate}
+              >
+                refetch
+              </button>
+            </p>
+          ) : null}
         </div>
         <div className="tallies" aria-live="polite">
           {counts.map((tally) => (

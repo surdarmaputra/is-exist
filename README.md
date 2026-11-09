@@ -60,13 +60,28 @@ it is empty, so set it to the deployed origin. Same-origin requests carry no
 `Origin` header and are always accepted — CORS is a browser boundary, not
 authentication.
 
+## Refresh and cache
+
+The checked handle lives in the URL (`/?u=nasa`). Submitting a scan updates the
+query string, so refreshing restores the input and runs the same lookup again.
+
+Completed scans are cached in the server process for **10 minutes**, keyed by
+the lowercased handle, and shared by every browser hitting the same homelab
+instance. A cache hit streams the stored results immediately; the panel shows
+`from cache · N min ago` with a `refetch` button. Refetching sends `&fresh=1`,
+bypasses the cache, streams live results, and overwrites the cache entry.
+
+The cache is in-memory and disappears when `is-exist.service` restarts. Entries
+are capped at 200, expired entries are dropped on read, and `?fresh=1` can also
+be called directly when debugging.
+
 ## How it works
 
 1. The form validates the handle (`[a-zA-Z0-9][a-zA-Z0-9._-]*`, up to 39 chars)
    and renders all twenty-two rows in a `checking` state immediately.
-2. It calls `GET /api/check?username=<handle>`. The route streams NDJSON:
-   one `{"type":"result"}` frame per check as soon as that lookup finishes,
-   then `{"type":"done"}`.
+2. It calls `GET /api/check?username=<handle>`. The route streams NDJSON: a
+   `source` frame (`live` or `cache`), one `{"type":"result"}` frame per check
+   as soon as that lookup finishes, then `{"type":"done"}`.
 3. The server fans out with six concurrent `fetch` calls, an 8 s timeout per
    check, and aborts everything when the browser closes the stream. The client
    aborts the stream when the username changes, a new scan starts, or the page
@@ -130,17 +145,19 @@ Notes that matter:
 
 ## API
 
-`GET /api/check?username=<handle>` → `application/x-ndjson`
+`GET /api/check?username=<handle>[&fresh=1]` → `application/x-ndjson`
 
 ```
+{"type":"source","source":"cache","cachedAt":"2026-11-09T04:00:00.000Z"}
 {"type":"result","result":{"id":"github","status":"taken"}}
 {"type":"result","result":{"id":"snapchat","status":"unknown","detail":"HTTP 404"}}
 ...
 {"type":"done"}
 ```
 
-Errors before streaming use JSON: `400` for an invalid username, `403` for a
-non-allowlisted `Origin`.
+`fresh=1` skips the cache and revalidates it. The response header `x-cache` is
+`HIT` or `MISS` for convenience. Errors before streaming use JSON: `400` for an
+invalid username, `403` for a non-allowlisted `Origin`.
 
 ## Project layout
 
@@ -151,9 +168,11 @@ src/
   hooks/use-scan.ts         NDJSON reader, row state, cancellation
   lib/platforms.ts          shared catalog and event types
   lib/domain.ts             username → .com domain validation
+  lib/group-rows.ts         status grouping and alphabetical sort
   lib/username.ts           shared validation
   server/classify.ts        HTTP/marker → outcome rules
   server/platform-checks.ts per-platform probes + concurrency
+  server/scan-cache.ts      in-memory TTL cache for completed scans
   server/origins.ts         env loading and CORS decisions
   styles.css                design tokens, layout, motion
 deploy/

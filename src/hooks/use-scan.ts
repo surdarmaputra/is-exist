@@ -14,6 +14,7 @@ export interface ScanRow {
 }
 
 export type ScanPhase = 'idle' | 'scanning' | 'done' | 'error'
+export type ScanSource = 'live' | 'cache'
 
 function initialRows(): ScanRow[] {
   return PLATFORMS.map((platform) => ({
@@ -32,6 +33,8 @@ export function useScan() {
   const [rows, setRows] = useState<ScanRow[] | null>(null)
   const [phase, setPhase] = useState<ScanPhase>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [source, setSource] = useState<ScanSource | null>(null)
+  const [cachedAt, setCachedAt] = useState<string | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
 
   const stop = useCallback(() => {
@@ -44,10 +47,12 @@ export function useScan() {
     setRows(null)
     setPhase('idle')
     setError(null)
+    setSource(null)
+    setCachedAt(null)
   }, [stop])
 
   const start = useCallback(
-    (username: string) => {
+    (username: string, options?: { fresh?: boolean }) => {
       stop()
 
       const controller = new AbortController()
@@ -56,6 +61,8 @@ export function useScan() {
       setRows(initialRows())
       setPhase('scanning')
       setError(null)
+      setSource(null)
+      setCachedAt(null)
 
       const isCurrent = () => controllerRef.current === controller
 
@@ -73,6 +80,12 @@ export function useScan() {
 
       const apply = (event: ScanEvent) => {
         if (!isCurrent()) return
+
+        if (event.type === 'source') {
+          setSource(event.source)
+          setCachedAt(event.cachedAt ?? null)
+          return
+        }
 
         if (isResultEvent(event)) {
           updateRow(event.result.id, event.result.status, event.result.detail)
@@ -92,13 +105,13 @@ export function useScan() {
 
       const readStream = async () => {
         try {
-          const response = await fetch(
-            `/api/check?username=${encodeURIComponent(username)}`,
-            {
-              signal: controller.signal,
-              headers: { accept: 'application/x-ndjson' },
-            },
-          )
+          const params = new URLSearchParams({ username })
+          if (options?.fresh) params.set('fresh', '1')
+
+          const response = await fetch(`/api/check?${params.toString()}`, {
+            signal: controller.signal,
+            headers: { accept: 'application/x-ndjson' },
+          })
 
           if (!response.ok) {
             const payload = (await response.json().catch(() => null)) as {
@@ -175,5 +188,5 @@ export function useScan() {
     }
   }, [])
 
-  return { rows, phase, error, start, cancel }
+  return { rows, phase, error, source, cachedAt, start, cancel }
 }
