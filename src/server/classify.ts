@@ -68,3 +68,77 @@ export function byPresenceMarker(marker: string) {
       : { status: 'available' }
   }
 }
+
+/** Facebook serves public profiles directly and redirects missing names away. */
+export async function byFacebookPage(
+  response: Response,
+): Promise<CheckOutcome> {
+  void response.body?.cancel()
+
+  if (response.status === 200) {
+    return { status: 'taken' }
+  }
+
+  if (response.status === 302 || response.status === 404) {
+    return { status: 'available' }
+  }
+
+  return { status: 'unknown', detail: `HTTP ${response.status}` }
+}
+
+/** TikTok's public oEmbed endpoint knows existing creators and returns 400 otherwise. */
+export async function byTiktokOembed(
+  response: Response,
+): Promise<CheckOutcome> {
+  void response.body?.cancel()
+
+  if (response.ok) {
+    return { status: 'taken' }
+  }
+
+  if (response.status === 400 || response.status === 404) {
+    return { status: 'available' }
+  }
+
+  return { status: 'unknown', detail: `HTTP ${response.status}` }
+}
+
+/** Discord's unauthenticated registration check returns `{ taken: boolean }`. */
+export async function byDiscordAvailability(
+  response: Response,
+): Promise<CheckOutcome> {
+  if (!response.ok) {
+    void response.body?.cancel()
+    return {
+      status: 'unknown',
+      detail:
+        response.status === 429 ? 'rate limited — retry later' : `HTTP ${response.status}`,
+    }
+  }
+
+  const data = (await response.json().catch(() => null)) as {
+    taken?: unknown
+  } | null
+
+  if (typeof data?.taken !== 'boolean') {
+    return { status: 'unknown', detail: 'unexpected response' }
+  }
+
+  return { status: data.taken ? 'taken' : 'available' }
+}
+
+/**
+ * Some platforms only answer for a profile page when their bot/region gate
+ * lets us through. A successful page means the handle exists; anything else
+ * is unverified rather than a made-up "available".
+ */
+export async function byReachableProfile(
+  response: Response,
+): Promise<CheckOutcome> {
+  void response.body?.cancel()
+
+  return response.ok
+    ? { status: 'taken' }
+    : { status: 'unknown', detail: `HTTP ${response.status}` }
+}
+

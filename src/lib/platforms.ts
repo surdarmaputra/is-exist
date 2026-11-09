@@ -1,4 +1,16 @@
+import { comDomainFor } from './domain'
+
 export const PLATFORM_IDS = [
+  'domain',
+  'threads',
+  'instagram',
+  'tiktok',
+  'pinterest',
+  'snapchat',
+  'reddit',
+  'discord',
+  'lemon8',
+  'facebook',
   'github',
   'gitlab',
   'mastodon',
@@ -30,15 +42,105 @@ export interface Platform {
   glyph: string
   /** Brand-ish accent used for the badge background. */
   accent: string
-  profileUrl: (username: string) => string
+  /** Badge text colour when the accent is too light for white. */
+  badgeText?: string
+  /** The social network's main site, for people who want to explore it. */
+  homeUrl: string
+  /** Public profile URL, when the platform exposes one by username. */
+  profileUrl?: (username: string) => string | null
 }
 
 export const PLATFORMS: readonly Platform[] = [
+  {
+    id: 'domain',
+    name: '.com domain',
+    glyph: 'com',
+    accent: '#0f766e',
+    homeUrl: 'https://www.verisign.com/domain-names/com-domain-names/',
+    profileUrl: (username) => {
+      const domain = comDomainFor(username)
+      return domain ? `https://${domain}` : null
+    },
+  },
+  {
+    id: 'threads',
+    name: 'Threads',
+    glyph: 'TH',
+    accent: '#0f1419',
+    homeUrl: 'https://www.threads.com',
+    profileUrl: (username) => `https://www.threads.com/@${username}`,
+  },
+  {
+    id: 'instagram',
+    name: 'Instagram',
+    glyph: 'IG',
+    accent: '#d62976',
+    homeUrl: 'https://www.instagram.com',
+    profileUrl: (username) => `https://www.instagram.com/${username}/`,
+  },
+  {
+    id: 'tiktok',
+    name: 'TikTok',
+    glyph: 'TT',
+    accent: '#111111',
+    homeUrl: 'https://www.tiktok.com',
+    profileUrl: (username) => `https://www.tiktok.com/@${username}`,
+  },
+  {
+    id: 'pinterest',
+    name: 'Pinterest',
+    glyph: 'PIN',
+    accent: '#e60023',
+    homeUrl: 'https://www.pinterest.com',
+    profileUrl: (username) => `https://www.pinterest.com/${username}/`,
+  },
+  {
+    id: 'snapchat',
+    name: 'Snapchat',
+    glyph: 'SN',
+    accent: '#fffc00',
+    badgeText: '#1a1a1a',
+    homeUrl: 'https://www.snapchat.com',
+    profileUrl: (username) => `https://www.snapchat.com/add/${username}`,
+  },
+  {
+    id: 'reddit',
+    name: 'Reddit',
+    glyph: 'RD',
+    accent: '#ff4500',
+    homeUrl: 'https://www.reddit.com',
+    profileUrl: (username) => `https://www.reddit.com/user/${username}`,
+  },
+  {
+    id: 'discord',
+    name: 'Discord',
+    glyph: 'DC',
+    accent: '#5865f2',
+    homeUrl: 'https://discord.com',
+  },
+  {
+    id: 'lemon8',
+    name: 'Lemon8',
+    glyph: 'L8',
+    accent: '#ffcb00',
+    badgeText: '#1a1a1a',
+    homeUrl: 'https://www.lemon8-app.com',
+    profileUrl: (username) => `https://www.lemon8-app.com/@${username}`,
+  },
+  {
+    id: 'facebook',
+    name: 'Facebook',
+    glyph: 'FB',
+    accent: '#1877f2',
+    homeUrl: 'https://www.facebook.com',
+    profileUrl: (username) => `https://www.facebook.com/${username}`,
+  },
   {
     id: 'github',
     name: 'GitHub',
     glyph: 'GH',
     accent: '#24292f',
+    homeUrl: 'https://github.com',
     profileUrl: (username) => `https://github.com/${username}`,
   },
   {
@@ -46,6 +148,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'GitLab',
     glyph: 'GL',
     accent: '#e24329',
+    homeUrl: 'https://gitlab.com',
     profileUrl: (username) => `https://gitlab.com/${username}`,
   },
   {
@@ -53,6 +156,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Mastodon',
     glyph: 'MA',
     accent: '#6364ff',
+    homeUrl: 'https://joinmastodon.org',
     profileUrl: (username) => `https://mastodon.social/@${username}`,
   },
   {
@@ -60,6 +164,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'YouTube',
     glyph: 'YT',
     accent: '#ff0033',
+    homeUrl: 'https://www.youtube.com',
     profileUrl: (username) => `https://www.youtube.com/@${username}`,
   },
   {
@@ -67,6 +172,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'X',
     glyph: 'X',
     accent: '#0f1419',
+    homeUrl: 'https://x.com',
     profileUrl: (username) => `https://x.com/${username}`,
   },
   {
@@ -74,6 +180,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Telegram',
     glyph: 'TG',
     accent: '#229ed9',
+    homeUrl: 'https://telegram.org',
     profileUrl: (username) => `https://t.me/${username}`,
   },
   {
@@ -81,6 +188,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'SoundCloud',
     glyph: 'SC',
     accent: '#ff5500',
+    homeUrl: 'https://soundcloud.com',
     profileUrl: (username) => `https://soundcloud.com/${username}`,
   },
   {
@@ -88,6 +196,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Dribbble',
     glyph: 'DR',
     accent: '#ea4c89',
+    homeUrl: 'https://dribbble.com',
     profileUrl: (username) => `https://dribbble.com/${username}`,
   },
   {
@@ -95,6 +204,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Keybase',
     glyph: 'KB',
     accent: '#ff6f21',
+    homeUrl: 'https://keybase.io',
     profileUrl: (username) => `https://keybase.io/${username}`,
   },
   {
@@ -102,6 +212,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'DEV',
     glyph: 'D',
     accent: '#0a0a0a',
+    homeUrl: 'https://dev.to',
     profileUrl: (username) => `https://dev.to/${username}`,
   },
   {
@@ -109,6 +220,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Hacker News',
     glyph: 'HN',
     accent: '#ff6600',
+    homeUrl: 'https://news.ycombinator.com',
     profileUrl: (username) =>
       `https://news.ycombinator.com/user?id=${username}`,
   },
@@ -117,6 +229,7 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Steam',
     glyph: 'ST',
     accent: '#1b2838',
+    homeUrl: 'https://steamcommunity.com',
     profileUrl: (username) =>
       `https://steamcommunity.com/id/${username}`,
   },

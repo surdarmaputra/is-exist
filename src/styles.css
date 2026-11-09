@@ -464,8 +464,35 @@ body {
 }
 
 .row-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  width: fit-content;
+  color: inherit;
   font-weight: 800;
   font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.row-name:hover {
+  color: var(--coral-deep);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.row-home {
+  font-size: 0.65rem;
+  opacity: 0.3;
+  transform: translate(-1px, 1px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s var(--ease-spring);
+}
+
+.row-name:hover .row-home,
+.row-name:focus-visible .row-home {
+  opacity: 0.9;
+  transform: none;
 }
 
 .row-detail {
@@ -611,17 +638,49 @@ body {
   list-style: none;
 }
 
+.chips li {
+  display: flex;
+}
+
 .chip {
   display: flex;
   align-items: center;
   gap: 0.55rem;
+  width: 100%;
   padding: 0.45rem 0.6rem;
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--line);
   border-radius: 0.9rem;
+  color: inherit;
   font-size: 0.8rem;
   font-weight: 700;
+  text-decoration: none;
   animation: chip-in 0.4s var(--ease-spring) both;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s var(--ease-spring);
+}
+
+.chip:hover {
+  background: #fff;
+  border-color: rgba(255, 106, 77, 0.45);
+  transform: translateY(-1px);
+}
+
+.chip-arrow {
+  margin-left: auto;
+  color: var(--coral-deep);
+  font-size: 0.72rem;
+  opacity: 0.35;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s var(--ease-spring);
+}
+
+.chip:hover .chip-arrow {
+  opacity: 1;
+  transform: translate(1px, -1px);
 }
 
 .chip-badge {

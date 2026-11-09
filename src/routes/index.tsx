@@ -60,7 +60,7 @@ function Home() {
           is-exist
         </span>
         <span className="topbar-note">
-          {PLATFORMS.length} platforms · one scan
+          {PLATFORMS.length} checks · one scan
         </span>
       </header>
 
@@ -219,7 +219,7 @@ function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
         {phase === 'error'
           ? (error ?? 'The scan stopped unexpectedly.')
           : phase === 'done'
-            ? `All ${total} platforms answered. Go claim your name.`
+            ? `All ${total} checks answered. Go claim your name.`
             : `Checked ${resolved} of ${total} — results land as they arrive.`}
       </p>
     </div>
@@ -236,6 +236,9 @@ function ResultRow({
   index: number
 }) {
   const { platform, status, detail } = row
+  const profileUrl = username ? (platform.profileUrl?.(username) ?? null) : null
+  const actionLabel =
+    status === 'taken' ? 'visit' : status === 'unknown' ? 'inspect' : null
 
   return (
     <li
@@ -244,14 +247,28 @@ function ResultRow({
     >
       <span
         className="badge"
-        style={{ backgroundColor: platform.accent }}
+        style={{
+          backgroundColor: platform.accent,
+          color: platform.badgeText,
+        }}
         aria-hidden="true"
       >
         {platform.glyph}
       </span>
 
       <span className="row-main">
-        <span className="row-name">{platform.name}</span>
+        <a
+          className="row-name"
+          href={platform.homeUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          title={`Open ${platform.name}`}
+        >
+          {platform.name}
+          <span className="row-home" aria-hidden="true">
+            ↗
+          </span>
+        </a>
         {detail ? <span className="row-detail">{detail}</span> : null}
       </span>
 
@@ -273,14 +290,14 @@ function ResultRow({
         )}
       </span>
 
-      {status === 'taken' && username ? (
+      {profileUrl && actionLabel ? (
         <a
           className="row-link"
-          href={platform.profileUrl(username)}
+          href={profileUrl}
           target="_blank"
           rel="noreferrer noopener"
         >
-          visit <span aria-hidden="true">↗</span>
+          {actionLabel} <span aria-hidden="true">↗</span>
           <span className="sr-only"> {platform.name} profile</span>
         </a>
       ) : (
@@ -294,7 +311,7 @@ function Coverage() {
   return (
     <div className="coverage">
       <div className="coverage-head">
-        <h2>One handle, a dozen doors.</h2>
+        <h2>One handle, {PLATFORMS.length} doors.</h2>
         <p>
           Every check runs in parallel. Rows fill in as each platform replies,
           so you never stare at a blank screen.
@@ -304,17 +321,30 @@ function Coverage() {
         {PLATFORMS.map((platform, index) => (
           <li
             key={platform.id}
-            className="chip"
-            style={{ animationDelay: `${index * 25}ms` }}
+            style={{ animationDelay: `${Math.min(index * 20, 200)}ms` }}
           >
-            <span
-              className="chip-badge"
-              style={{ backgroundColor: platform.accent }}
-              aria-hidden="true"
+            <a
+              className="chip"
+              href={platform.homeUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              title={`Open ${platform.name}`}
             >
-              {platform.glyph}
-            </span>
-            {platform.name}
+              <span
+                className="chip-badge"
+                style={{
+                  backgroundColor: platform.accent,
+                  color: platform.badgeText,
+                }}
+                aria-hidden="true"
+              >
+                {platform.glyph}
+              </span>
+              {platform.name}
+              <span className="chip-arrow" aria-hidden="true">
+                ↗
+              </span>
+            </a>
           </li>
         ))}
       </ul>

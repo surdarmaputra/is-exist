@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  byDiscordAvailability,
+  byFacebookPage,
   byHttpStatus,
   byMissingMarker,
   byPresenceMarker,
+  byReachableProfile,
+  byTiktokOembed,
 } from './classify'
 
 describe('byHttpStatus', () => {
@@ -78,5 +82,85 @@ describe('byPresenceMarker', () => {
       status: 'unknown',
       detail: 'HTTP 403',
     })
+  })
+})
+
+describe('byFacebookPage', () => {
+  it('treats a rendered profile as taken', async () => {
+    expect(await byFacebookPage(new Response('<html>', { status: 200 }))).toEqual(
+      { status: 'taken' },
+    )
+  })
+
+  it('treats the missing-profile redirect as available', async () => {
+    expect(
+      await byFacebookPage(new Response(null, { status: 302 })),
+    ).toEqual({ status: 'available' })
+  })
+
+  it('does not guess when Facebook refuses the request', async () => {
+    expect(await byFacebookPage(new Response(null, { status: 429 }))).toEqual({
+      status: 'unknown',
+      detail: 'HTTP 429',
+    })
+  })
+})
+
+describe('byTiktokOembed', () => {
+  it('treats a creator oEmbed response as taken', async () => {
+    expect(
+      await byTiktokOembed(new Response('{"title":"x"}', { status: 200 })),
+    ).toEqual({ status: 'taken' })
+  })
+
+  it('treats the missing-creator 400 as available', async () => {
+    expect(
+      await byTiktokOembed(new Response('{"code":400}', { status: 400 })),
+    ).toEqual({ status: 'available' })
+  })
+
+  it('does not guess on rate limits', async () => {
+    expect(await byTiktokOembed(new Response(null, { status: 429 }))).toEqual({
+      status: 'unknown',
+      detail: 'HTTP 429',
+    })
+  })
+})
+
+describe('byDiscordAvailability', () => {
+  it('reads the availability flag both ways', async () => {
+    expect(
+      await byDiscordAvailability(Response.json({ taken: true })),
+    ).toEqual({ status: 'taken' })
+    expect(
+      await byDiscordAvailability(Response.json({ taken: false })),
+    ).toEqual({ status: 'available' })
+  })
+
+  it('does not guess on an unexpected payload', async () => {
+    expect(await byDiscordAvailability(Response.json({ ok: true }))).toEqual({
+      status: 'unknown',
+      detail: 'unexpected response',
+    })
+  })
+
+  it('does not guess when the endpoint is throttled', async () => {
+    expect(
+      await byDiscordAvailability(new Response(null, { status: 429 })),
+    ).toEqual({ status: 'unknown', detail: 'rate limited — retry later' })
+  })
+})
+
+describe('byReachableProfile', () => {
+  it('treats a reachable profile page as taken', async () => {
+    expect(
+      await byReachableProfile(new Response('<html>', { status: 200 })),
+    ).toEqual({ status: 'taken' })
+  })
+
+  it('keeps blocked profile routes unverified', async () => {
+    expect(
+      await byReachableProfile(new Response('not found', { status: 404 })),
+    ).toEqual({ status: 'unknown', detail: 'HTTP 404' })
   })
 })

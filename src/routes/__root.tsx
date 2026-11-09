@@ -15,7 +15,7 @@ export const Route = createRootRoute({
       {
         name: 'description',
         content:
-          'Check one username across GitHub, YouTube, X and nine more platforms in a single parallel scan.',
+          'Check one username across 22 social platforms and .com domains in a single parallel scan.',
       },
       {
         name: 'theme-color',
