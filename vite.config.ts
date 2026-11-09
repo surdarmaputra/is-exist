@@ -6,8 +6,20 @@ import viteReact from '@vitejs/plugin-react'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  server: { cors: false },
-  preview: { cors: false },
+  server: {
+    host: true,
+    port: 3200,
+    strictPort: true,
+    cors: false,
+    allowedHosts: ['pisanggoreng'],
+  },
+  preview: {
+    host: true,
+    port: 3200,
+    strictPort: true,
+    cors: false,
+    allowedHosts: ['pisanggoreng'],
+  },
   plugins: [tanstackStart(), viteReact()],
 })
 

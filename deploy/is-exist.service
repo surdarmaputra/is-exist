@@ -1,0 +1,20 @@
+[Unit]
+Description=is-exist username checker (TanStack Start, port 3200)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Projects/is-exist
+Environment=PATH=%h/.local/share/mise/installs/node/26.12.0/bin:/usr/local/bin:/usr/bin:/bin
+Environment=NODE_ENV=production
+EnvironmentFile=-%h/Projects/is-exist/.env
+ExecStartPre=%h/.local/share/mise/installs/node/26.12.0/bin/npm run build
+ExecStart=%h/.local/share/mise/installs/node/26.12.0/bin/npm run preview
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:%h/Projects/is-exist/is-exist.log
+StandardError=append:%h/Projects/is-exist/is-exist.log
+
+[Install]
+WantedBy=default.target

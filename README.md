@@ -11,7 +11,7 @@ accounts, no client-side calls to the platforms — the server does the lookups.
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:3200
 ```
 
 Other scripts:
@@ -23,12 +23,29 @@ npm run build    # production build in dist/
 npm run preview  # serve the production build
 ```
 
-The dev server picks another port when 3000 is busy. Override CORS explicitly
-in that case:
+The port is fixed at **3200** in `vite.config.ts` (`strictPort`), and dev and
+preview bind every interface. To run another instance:
 
 ```bash
-ALLOWED_ORIGINS=http://localhost:3001 npm run dev
+npm run dev -- --port 3300
+ALLOWED_ORIGINS=http://localhost:3300 npm run preview -- --port 3300
 ```
+
+## Homelab
+
+The homelab instance is the systemd user service `is-exist.service`: it builds
+the production bundle, then serves it at **http://pisanggoreng:3200**.
+
+```bash
+cp deploy/is-exist.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now is-exist.service
+systemctl --user status is-exist.service
+journalctl --user -u is-exist.service -f
+```
+
+Output is also appended to `is-exist.log` in the project root. Stop it with
+`systemctl --user stop is-exist.service`.
 
 ## Configuration
 
@@ -37,7 +54,7 @@ ALLOWED_ORIGINS=http://localhost:3001 npm run dev
 | `ALLOWED_ORIGINS` | Comma-separated browser origins allowed to call `/api/check` |
 
 Copy `.env.example` to `.env` (loaded by the server, never bundled). In
-development the allowlist falls back to `http://localhost:3000`; in production
+development the allowlist falls back to `http://localhost:3200`; in production
 it is empty, so set it to the deployed origin. Same-origin requests carry no
 `Origin` header and are always accepted — CORS is a browser boundary, not
 authentication.
@@ -112,4 +129,6 @@ src/
   server/platform-checks.ts per-platform probes + concurrency
   server/origins.ts         env loading and CORS decisions
   styles.css                design tokens, layout, motion
+deploy/
+  is-exist.service          systemd user unit for the homelab instance
 ```
