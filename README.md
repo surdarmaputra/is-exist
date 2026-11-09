@@ -78,6 +78,10 @@ authentication.
    - `unknown` — 403/429/5xx, timeout, network failure, or a platform that will
      not answer anonymous lookups. The UI shows `unverified` with the reason
      instead of pretending the handle is free.
+5. Results are grouped **Taken → Unverified → Free**, each list sorted
+   alphabetically by platform name. Rows still in flight sit in a trailing
+   `Checking` group; the `x taken / y free / z unverified` counts stay pinned at
+   the top of the panel throughout.
 
 ### Supported checks
 

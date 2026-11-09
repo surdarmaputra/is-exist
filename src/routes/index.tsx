@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { PLATFORMS, type CheckStatus, type RowStatus } from '#/lib/platforms'
+import { groupRows, type RowGroup } from '#/lib/group-rows'
 import { validateUsername } from '#/lib/username'
 import { useScan, type ScanRow } from '#/hooks/use-scan'
 
@@ -168,7 +169,8 @@ function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
   const counts = TALLY_ORDER.map((status) => ({
     status,
     count: rows.filter((row) => row.status === status).length,
-  })).filter((tally) => tally.count > 0)
+  }))
+  const groups = groupRows(rows)
 
   return (
     <div className="panel">
@@ -178,22 +180,12 @@ function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
           <h2 className="panel-title">@{username}</h2>
         </div>
         <div className="tallies" aria-live="polite">
-          {counts.length > 0 ? (
-            counts.map((tally) => (
-              <span
-                key={tally.status}
-                className={`tally tally--${tally.status}`}
-              >
-                <span className="tally-dot" aria-hidden="true" />
-                {tally.count} {STATUS_COPY[tally.status]}
-              </span>
-            ))
-          ) : (
-            <span className="tally tally--checking">
+          {counts.map((tally) => (
+            <span key={tally.status} className={`tally tally--${tally.status}`}>
               <span className="tally-dot" aria-hidden="true" />
-              scanning
+              {tally.count} {STATUS_COPY[tally.status]}
             </span>
-          )}
+          ))}
         </div>
       </header>
 
@@ -201,16 +193,15 @@ function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
         <span style={{ width: `${(resolved / total) * 100}%` }} />
       </div>
 
-      <ol className="rows">
-        {rows.map((row, index) => (
-          <ResultRow
-            key={row.platform.id}
-            row={row}
+      <div className="rows-wrap">
+        {groups.map((group) => (
+          <ResultGroup
+            key={group.status}
+            group={group}
             username={username}
-            index={index}
           />
         ))}
-      </ol>
+      </div>
 
       <p
         className={`panel-foot${phase === 'error' ? ' is-error' : ''}`}
@@ -223,6 +214,34 @@ function ResultPanel({ rows, username, phase, error }: ResultPanelProps) {
             : `Checked ${resolved} of ${total} — results land as they arrive.`}
       </p>
     </div>
+  )
+}
+
+function ResultGroup({
+  group,
+  username,
+}: {
+  group: RowGroup<ScanRow>
+  username: string | null
+}) {
+  return (
+    <section className={`group group--${group.status}`} aria-label={`${group.label} results`}>
+      <h3 className="group-title">
+        <span className="group-dot" aria-hidden="true" />
+        {group.label}
+        <span className="group-count">{group.rows.length}</span>
+      </h3>
+      <ol className="rows">
+        {group.rows.map((row, index) => (
+          <ResultRow
+            key={row.platform.id}
+            row={row}
+            username={username}
+            index={index}
+          />
+        ))}
+      </ol>
+    </section>
   )
 }
 

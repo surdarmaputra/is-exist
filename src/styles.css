@@ -392,11 +392,6 @@ body {
   color: var(--unknown);
 }
 
-.tally--checking {
-  background: var(--checking-bg);
-  color: var(--checking);
-}
-
 .progress {
   height: 6px;
   margin: 1.2rem 0 0.9rem;
@@ -416,6 +411,72 @@ body {
     #45c98a 100%
   );
   transition: width 0.5s var(--ease-spring);
+}
+
+.rows-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  animation: row-in 0.35s var(--ease-spring) both;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.group-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  margin-left: 0.15rem;
+  background: var(--line);
+}
+
+.group-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.group--taken .group-title {
+  color: var(--taken);
+}
+
+.group--unknown .group-title {
+  color: var(--unknown);
+}
+
+.group--available .group-title {
+  color: var(--free);
+}
+
+.group--checking .group-title {
+  color: var(--checking);
+}
+
+.group-count {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(34, 26, 22, 0.06);
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .rows {
