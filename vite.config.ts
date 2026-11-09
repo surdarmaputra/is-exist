@@ -12,8 +12,18 @@ export default defineConfig(({ mode }) => {
   const netlifyDeployment =
     (process.env.NETLIFY_DEPLOYMENT ?? env.NETLIFY_DEPLOYMENT) === '1'
 
+  const siteUrl = (
+    env.VITE_SITE_URL ||
+    env.SITE_URL ||
+    process.env.SITE_URL ||
+    process.env.DEPLOY_PRIME_URL ||
+    process.env.URL ||
+    'http://pisanggoreng:3200'
+  ).replace(/\/+$/, '')
+
   return {
     resolve: { tsconfigPaths: true },
+    define: { __SITE_URL__: JSON.stringify(siteUrl) },
     server: {
       host: true,
       port: 3200,

@@ -102,12 +102,26 @@ contains the adapter commit; production deploys of `main` have it.
 | Variable          | Purpose                                                    |
 | ----------------- | ---------------------------------------------------------- |
 | `ALLOWED_ORIGINS` | Comma-separated browser origins allowed to call `/api/check` |
+| `SITE_URL`        | Public origin used in canonical/OG tags (Netlify supplies `DEPLOY_PRIME_URL`) |
 
 Copy `.env.example` to `.env` (loaded by the server, never bundled). In
 development the allowlist falls back to `http://localhost:3200`; in production
 it is empty, so set it to the deployed origin. Same-origin requests carry no
 `Origin` header and are always accepted — CORS is a browser boundary, not
 authentication.
+
+## SEO and link previews
+
+`?u=<handle>` pages get their own title, description, and canonical URL — for
+example `Is @nasa taken? · is-exist`. Shared links also carry site-wide Open
+Graph and Twitter Card tags plus a 1200×630 `public/og.png` card, so chat apps
+and social sites can render a real preview instead of a bare URL. The page
+includes `WebApplication` JSON-LD, and `public/robots.txt` allows indexing.
+
+The absolute URL is baked at build time from `SITE_URL`/`VITE_SITE_URL`, then
+Netlify's `DEPLOY_PRIME_URL`/`URL`, then `http://pisanggoreng:3200`. Set
+`SITE_URL=https://your-domain` on Netlify when using a custom domain. Replace
+`public/og.png` to rebrand the card.
 
 ## Refresh and cache
 
@@ -218,6 +232,7 @@ src/
   lib/platforms.ts          shared catalog and event types
   lib/domain.ts             username → .com domain validation
   lib/group-rows.ts         status grouping and alphabetical sort
+  lib/site.ts               site name, public URL and OG image constants
   lib/username.ts           shared validation
   server/classify.ts        HTTP/marker → outcome rules
   server/platform-checks.ts per-platform probes + concurrency
@@ -228,5 +243,8 @@ deploy/
   is-exist.service          systemd user unit for the homelab instance
 scripts/
   verify-netlify-build.mjs  fails Netlify builds without the SSR function
+public/
+  og.png                    1200×630 social preview card
+  robots.txt                crawler policy
 netlify.toml                Netlify build switch and publish directory
 ```

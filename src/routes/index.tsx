@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { PLATFORMS, type CheckStatus, type RowStatus } from '#/lib/platforms'
 import { groupRows, type RowGroup } from '#/lib/group-rows'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '#/lib/site'
 import { validateUsername } from '#/lib/username'
 import { useScan, type ScanRow, type ScanSource } from '#/hooks/use-scan'
 
@@ -10,6 +11,32 @@ export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>): { u?: string } => {
     const username = typeof search.u === 'string' ? search.u : ''
     return username ? { u: username } : {}
+  },
+  head: ({ match }) => {
+    const check = validateUsername(match.search.u ?? '')
+    const username = check.ok ? check.username : null
+    const title = username
+      ? `Is @${username} taken? · ${SITE_NAME}`
+      : `${SITE_NAME} — is your username taken?`
+    const description = username
+      ? `Check @${username} across 22 social platforms and the .com domain. See what is taken, free, or unverified in one scan.`
+      : SITE_DESCRIPTION
+    const path = username ? `/?u=${encodeURIComponent(username)}` : '/'
+    const url = `${SITE_URL}${path}`
+
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        { name: 'robots', content: 'index, follow, max-image-preview:large' },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:url', content: url },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+      ],
+      links: [{ rel: 'canonical', href: url }],
+    }
   },
   component: Home,
 })
