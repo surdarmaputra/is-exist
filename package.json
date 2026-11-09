@@ -10,7 +10,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:netlify": "NETLIFY_DEPLOYMENT=1 npm run build && node scripts/verify-netlify-build.mjs"
   },
   "dependencies": {
     "@tanstack/react-router": "1.170.46",

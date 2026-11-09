@@ -57,8 +57,10 @@ builds keep producing the plain Node output used by `is-exist.service`.
 
 1. Push the repo to GitHub.
 2. Import it at <https://app.netlify.com/start>.
-3. Netlify runs `npm run build`, publishes `dist/client`, and wraps the SSR and
-   `/api/check` routes in a Netlify Function (`.netlify/v1/functions/server.mjs`).
+3. Netlify runs `npm run build:netlify`, publishes `dist/client`, and wraps the
+   SSR and `/api/check` routes in a Netlify Function
+   (`.netlify/v1/functions/server.mjs`). The build fails fast if the adapter did
+   not produce that function.
 4. In **Site settings → Environment variables**, set
    `ALLOWED_ORIGINS=https://<your-site>.netlify.app` if the API is consumed from
    another origin.
@@ -67,13 +69,33 @@ builds keep producing the plain Node output used by `is-exist.service`.
 To build the Netlify bundle locally:
 
 ```bash
-NETLIFY_DEPLOYMENT=1 npm run build
+npm run build:netlify
 ```
 
 That writes `.netlify/v1/functions/server.mjs`; it is not served by
 `npm run preview`. Plain `npm run build` still produces `dist/server/server.js`
 for the homelab. On Netlify the in-memory scan cache is per function instance,
 so cache hits there are best-effort.
+
+### If Netlify says "Page not found"
+
+That is Netlify's fallback when no function handles `/`, which means either the
+deploy is stale or the Netlify adapter did not run during the build:
+
+1. Make sure the production branch is `main` and the deploy includes commit
+   `525d20c` (the Netlify adapter) or later.
+2. In **Project configuration → Build settings**, the build command should be
+   `npm run build:netlify` and the publish directory `dist/client`. They are
+   declared in `netlify.toml`, which overrides the UI; make sure the file is at
+   the repository root and the base directory is empty.
+3. The deploy log should contain
+   `Netlify ✓ Wrote SSR entry point to .netlify/v1/functions/server.mjs`, and
+   the deploy's **Functions** tab should list `server`.
+4. Trigger **Clear cache and deploy site** so Netlify reinstalls dependencies
+   and rereads `netlify.toml`.
+
+A Deploy Preview from an older pull request will still 404 until that branch
+contains the adapter commit; production deploys of `main` have it.
 
 ## Configuration
 
@@ -204,5 +226,7 @@ src/
   styles.css                design tokens, layout, motion
 deploy/
   is-exist.service          systemd user unit for the homelab instance
+scripts/
+  verify-netlify-build.mjs  fails Netlify builds without the SSR function
 netlify.toml                Netlify build switch and publish directory
 ```

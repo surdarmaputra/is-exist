@@ -29,11 +29,11 @@ export default defineConfig(({ mode }) => {
       allowedHosts: ['pisanggoreng'],
     },
     plugins: [
+      tanstackStart(),
+      viteReact(),
       // Netlify needs its adapter only for Netlify builds. The homelab keeps
       // building the plain Node/Vite output.
       ...(netlifyDeployment ? [netlify()] : []),
-      tanstackStart(),
-      viteReact(),
     ],
   }
 })

@@ -1,5 +1,7 @@
 [build]
-  command = "npm run build"
+  # The file-based config wins over UI build settings. build:netlify sets the
+  # adapter flag explicitly and fails the build if the SSR function is missing.
+  command = "npm run build:netlify"
   publish = "dist/client"
 
 [build.environment]
